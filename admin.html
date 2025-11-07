@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Elaichi • Admin Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root { --gold: #c19a6b; --charcoal: #0d0b09; --card-bg: rgba(20, 18, 16, 0.85); --border: rgba(193, 154, 107, 0.2); }
+    body { background: linear-gradient(135deg, var(--charcoal), #1a1612); color: #e8e1d1; font-family: 'Montserrat', sans-serif; padding: 1.5rem; }
+    .container { max-width: 1400px; margin: 0 auto; }
+    header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1.2rem; }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { font-size: 2.2rem; color: var(--gold); }
+    .logo h1 { font-family: 'Cormorant Garamond', serif; font-weight: 700; font-size: 2.4rem; background: linear-gradient(to right, #e8e1d1, #e8c99e); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.2rem; margin-bottom: 1.5rem; }
+    .stat-card { background: var(--card-bg); border-radius: 16px; padding: 1.4rem; text-align: center; border: 1px solid var(--border); }
+    .stat-value { font-family: 'Cormorant Garamond', serif; font-size: 2.2rem; font-weight: 700; color: var(--gold); }
+    .reservations { background: var(--card-bg); border-radius: 16px; overflow: hidden; border: 1px solid var(--border); }
+    .table-header { display: grid; grid-template-columns: 1.2fr 0.6fr 0.8fr 1fr 0.8fr 0.6fr; padding: 1.1rem 1.5rem; background: rgba(30, 28, 25, 0.7); font-weight: 600; color: #e8c99e; border-bottom: 1px solid var(--border); }
+    .reservation-row { display: grid; grid-template-columns: 1.2fr 0.6fr 0.8fr 1fr 0.8fr 0.6fr; padding: 1rem 1.5rem; border-bottom: 1px solid rgba(193, 154, 107, 0.08); }
+    .status { padding: 0.25rem 0.7rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+    .status.confirmed { background: rgba(76, 175, 80, 0.2); color: #81c784; }
+    .status.seated { background: rgba(255, 193, 7, 0.2); color: #ffcc00; }
+    .status.completed { background: rgba(33, 150, 243, 0.2); color: #64b5f6; }
+    .status.noshow { background: rgba(244, 67, 54, 0.2); color: #f44336; }
+    .table-tag { background: rgba(193, 154, 107, 0.15); color: var(--gold); padding: 0.2rem 0.6rem; border-radius: 6px; font-weight: 500; }
+    .amount.paid { color: #81c784; }
+    .amount.pending { color: #ffcc00; }
+    .amount.partial { color: #64b5f6; }
+    .actions { display: flex; gap: 0.5rem; justify-content: center; }
+    .actions button { width: 30px; height: 30px; border-radius: 6px; background: rgba(255,255,255,0.08); border: none; color: #c8b99e; cursor: pointer; }
+    #loading { text-align: center; padding: 3rem; color: var(--gold); }
+    #error { text-align: center; padding: 2rem; color: #f44336; background: rgba(244,67,54,0.1); border-radius: 12px; display: none; }
+    footer { text-align: center; margin-top: 2rem; color: #a89a85; font-size: 0.9rem; }
+    @media (max-width: 768px) {
+      .table-header, .reservation-row { grid-template-columns: 1fr; }
+      .table-header { display: none; }
+      .reservation-row { padding: 1.2rem; flex-direction: column; gap: 0.6rem; }
+      .reservation-row > div { display: flex; justify-content: space-between; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <div class="logo">
+        <i class="fas fa-crown logo-icon"></i>
+        <h1>Elaichi Admin</h1>
+      </div>
+      <div style="color:#c8b99e">Live • Real-Time</div>
+    </header>
+
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-value" id="totalCount">—</div>
+        <div>Today’s Bookings</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="revenue">—</div>
+        <div>Revenue</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="seatedCount">—</div>
+        <div>Seated</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="pendingCount">—</div>
+        <div>Pending</div>
+      </div>
+    </div>
+
+    <div class="reservations">
+      <div class="table-header">
+        <div>Guest</div>
+        <div>Table</div>
+        <div>Status</div>
+        <div>Time</div>
+        <div>Amount</div>
+        <div>Actions</div>
+      </div>
+      <div id="loading">
+        <i class="fas fa-spinner fa-spin"></i> Loading live bookings...
+      </div>
+      <div id="error"></div>
+      <div id="bookingsBody"></div>
+    </div>
+
+    <footer>
+      <p>Updated: <span id="lastSync">—</span></p>
+    </footer>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+  <script>
+    // ✅ YOUR FIREBASE CONFIG
+    const firebaseConfig = {
+      apiKey: "AIzaSyCwsOGcWKQNJ-ELtHFjWM55ivGhJgseApE",
+      authDomain: "elaichi-bookings-49e67.firebaseapp.com",
+      projectId: "elaichi-bookings-49e67",
+      storageBucket: "elaichi-bookings-49e67.firebasestorage.app",
+      messagingSenderId: "371261237367",
+      appId: "1:371261237367:web:4ca6b901dec590b6b17e72"
+    };
+
+    // Initialize Firebase
+    let db;
+    try {
+      firebase.initializeApp(firebaseConfig);
+      db = firebase.firestore();
+      console.log("✅ Firebase connected");
+    } catch (e) {
+      document.getElementById('loading').textContent = "❌ Firebase config error";
+    }
+
+    // Date helpers — ✅ FIXED for Timestamp
+    function formatTime(timestamp) {
+      if (!timestamp?.toDate) return '—';
+      return timestamp.toDate().toLocaleTimeString('en-IN', { hour12: true, hour: '2-digit', minute: '2-digit' });
+    }
+    function formatDate(timestamp) {
+      if (!timestamp?.toDate) return '—';
+      const d = timestamp.toDate();
+      return d.toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short' });
+    }
+
+    // Real-time listener
+    if (db) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      db.collection('reservations')
+        .where('createdAt', '>=', today)
+        .orderBy('dateTime', 'desc')
+        .onSnapshot(snapshot => {
+          const bookings = [];
+          let revenue = 0, seated = 0, pending = 0;
+
+          snapshot.forEach(doc => {
+            const b = { id: doc.id, ...doc.data() };
+            bookings.push(b);
+            if (b.amount) revenue += b.amount;
+            if (b.status === 'seated') seated++;
+            if (['confirmed', 'noshow'].includes(b.status)) pending++;
+          });
+
+          // Update UI
+          const bodyEl = document.getElementById('bookingsBody');
+          bodyEl.innerHTML = '';
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('lastSync').textContent = new Date().toLocaleTimeString('en-IN', { hour12: true });
+
+          if (bookings.length === 0) {
+            bodyEl.innerHTML = `<div style="padding:2rem;text-align:center;color:#a89a85">No bookings yet today.</div>`;
+          } else {
+            bookings.forEach(b => {
+              const row = document.createElement('div');
+              row.className = 'reservation-row';
+              row.innerHTML = `
+                <div><strong>${b.customerName}</strong><br><small>${b.email}</small></div>
+                <div><span class="table-tag">T${b.table}</span></div>
+                <div><span class="status ${b.status}">${b.status}</span></div>
+                <div>${formatDate(b.dateTime)}<br>${formatTime(b.dateTime)}</div>
+                <div class="amount ${b.amountStatus || 'pending'}">₹${b.amount?.toLocaleString() || '—'}</div>
+                <div class="actions">
+                  <button class="delete-btn" data-id="${b.id}" title="Delete"><i class="fas fa-trash-alt"></i></button>
+                </div>
+              `;
+              bodyEl.appendChild(row);
+            });
+
+            // Attach delete handlers
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+              btn.onclick = function() {
+                const id = this.getAttribute('data-id');
+                const name = this.closest('.reservation-row').querySelector('strong').textContent;
+                if (confirm(`🗑️ Delete booking for ${name}?`)) {
+                  db.collection('reservations').doc(id).delete()
+                    .catch(err => alert("❌ Delete failed: " + err.message));
+                }
+              };
+            });
+          }
+
+          // Update stats
+          document.getElementById('totalCount').textContent = bookings.length;
+          document.getElementById('revenue').textContent = `₹${revenue.toLocaleString()}`;
+          document.getElementById('seatedCount').textContent = seated;
+          document.getElementById('pendingCount').textContent = pending;
+
+        }, err => {
+          document.getElementById('error').textContent = `❌ ${err.message}`;
+          document.getElementById('error').style.display = 'block';
+        });
+    }
+  </script>
+</body>
+</html>
